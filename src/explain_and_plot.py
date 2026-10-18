@@ -1,7 +1,7 @@
 """Figures + SHAP biomarker attribution.
 
   fig1_model_comparison.png    per-drug Pearson r, elastic net vs XGBoost
-  fig2_association_volcano.png mutation-drug volcano plot
+  fig2_association_volcano.png mutation-drug volcano, unadjusted vs tissue-adjusted
   fig3_shap_<drug>.png         SHAP summary for the best-predicted drugs
   shap_top_features.csv        top SHAP features per explained drug
 """
@@ -16,6 +16,22 @@ import pandas as pd
 import shap
 import yaml
 from xgboost import XGBRegressor
+
+
+def _label_points(ax, pts, xcol, pcol):
+    """Label points with text stacked so labels on each side don't overlap."""
+    ymax = -np.log10(max(pts[pcol].min(), 1e-300)) if len(pts) else 1
+    gap = 0.06 * ymax
+    for side, sub in ((-1, pts[pts[xcol] < 0]), (1, pts[pts[xcol] >= 0])):
+        last = np.inf
+        for _, r in sub.sort_values(pcol).iterrows():
+            yp = -np.log10(max(r[pcol], 1e-300))
+            yt = min(yp, last - gap)
+            last = yt
+            ax.annotate(f"{r['gene']}:{r['drug']}", (r[xcol], yp),
+                        xytext=(r[xcol] + 0.25 * side, yt), fontsize=6,
+                        ha="left" if side > 0 else "right", va="center",
+                        arrowprops=dict(arrowstyle="-", lw=0.4, color="grey"))
 
 
 def main(cfg_path: str, n_explain: int):
@@ -40,18 +56,21 @@ def main(cfg_path: str, n_explain: int):
     ax.set_title(f"Per-drug prediction accuracy (n={len(wide)} drugs)")
     fig.tight_layout(); fig.savefig(figs / "fig1_model_comparison.png", dpi=200); plt.close(fig)
 
-    # Fig 2: volcano
-    fig, ax = plt.subplots(figsize=(6, 5))
-    y = -np.log10(assoc["p"].clip(lower=1e-300))
-    sig = assoc["fdr"] < 0.05
-    ax.scatter(assoc["delta_mean"], y, s=6, c=np.where(sig, "tab:red", "lightgrey"))
-    for _, r in assoc[sig].nsmallest(12, "p").iterrows():
-        ax.annotate(f"{r['gene']}:{r['drug']}", (r["delta_mean"], -np.log10(max(r["p"], 1e-300))),
-                    fontsize=6)
-    ax.axvline(0, color="k", lw=0.5)
-    ax.set_xlabel("Δ mean response (mutant − WT)   ← more sensitive")
-    ax.set_ylabel("−log10 p")
-    ax.set_title("Hotspot mutation × drug associations")
+    # Fig 2: volcano, unadjusted vs tissue-adjusted
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    panels = [("delta_mean", "p", "fdr", "Unadjusted (Welch t-test)"),
+              ("delta_adj", "p_adj", "fdr_adj", "Tissue-adjusted (response ~ mutation + tissue)")]
+    for ax, (dcol, pcol, fcol, title) in zip(axes, panels):
+        a = assoc.dropna(subset=[pcol])
+        y = -np.log10(a[pcol].clip(lower=1e-300))
+        sig = a[fcol] < 0.05
+        ax.scatter(a[dcol], y, s=6, c=np.where(sig, "tab:red", "lightgrey"))
+        _label_points(ax, a[sig].nsmallest(10, pcol), dcol, pcol)
+        ax.set_xlim(a[dcol].min() - 1.6, a[dcol].max() + 1.4)   # room for labels
+        ax.axvline(0, color="k", lw=0.5)
+        ax.set_xlabel("Δ response (mutant − WT)   ← more sensitive")
+        ax.set_title(f"{title}\n{int(sig.sum())} hits at FDR < 5%", fontsize=10)
+    axes[0].set_ylabel("−log10 p")
     fig.tight_layout(); fig.savefig(figs / "fig2_association_volcano.png", dpi=200); plt.close(fig)
 
     # SHAP on best-predicted drugs

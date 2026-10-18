@@ -23,6 +23,7 @@ modeling:
 
 associations:
   min_group_lines: 10            # skip tests with fewer mutant (or WT) lines
+  min_tissue_lines: 10           # pool lineages with fewer screened lines into "Other"
 
 # Drugs with well-known mutation biomarkers, checked in the association scan.
 # Nutlin-3a is a resistance control (TP53-mutant lines are LESS sensitive).

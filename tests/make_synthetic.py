@@ -1,6 +1,9 @@
 """Generate small synthetic inputs in the real GDSC2/DepMap formats with
 planted signals (BRAF-mutant lines sensitive to Dabrafenib; ERBB2 expression
-drives Lapatinib). Used only to smoke-test the pipeline; NOT for results."""
+drives Lapatinib) and one tissue confounder: KRAS mutations are enriched in
+"Pancreas" lines, which are resistant to Cisplatin for tissue reasons only, so
+KRAS:Cisplatin should be a hit unadjusted but not after tissue adjustment.
+Used only to smoke-test the pipeline; NOT for results."""
 import sys
 from pathlib import Path
 
@@ -14,7 +17,6 @@ out.mkdir(parents=True, exist_ok=True)
 n_lines, n_genes = 400, 300
 ach = [f"ACH-{i:06d}" for i in range(n_lines)]
 sid = [f"SIDM{i:05d}" for i in range(n_lines)]
-pd.DataFrame({"ModelID": ach, "SangerModelID": sid}).to_csv(out / "Model.csv", index=False)
 
 genes = [f"GENE{i}" for i in range(n_genes - 3)] + ["ERBB2", "EGFR", "MDM2"]
 expr = pd.DataFrame(rng.normal(3, 1, (n_lines, n_genes)), index=ach,
@@ -28,6 +30,16 @@ mut = pd.DataFrame({f"{g} ({2000+i})": rng.binomial(1, f, n_lines)
                     for i, (g, f) in enumerate(zip(mut_genes, freqs))}, index=ach)
 mut.to_csv(out / "OmicsSomaticMutationsMatrixHotspot.csv")
 
+# Tissue, from a separate RNG so the draws above stay unchanged
+trng = np.random.default_rng(1)
+kras = mut.iloc[:, 1].values
+tissues = np.array(["Lung", "Breast", "Lymphoid", "Pancreas"])
+lineage = np.where((kras == 1) & (trng.random(n_lines) < 0.8), "Pancreas",
+                   tissues[trng.integers(0, 3, n_lines)])
+pd.DataFrame({"ModelID": ach, "SangerModelID": sid, "OncotreeLineage": lineage}).to_csv(
+    out / "Model.csv", index=False)
+pancreas = (lineage == "Pancreas").astype(float)
+
 braf = mut.iloc[:, 0].values
 tp53 = mut.iloc[:, 2].values
 erbb2 = expr["ERBB2 (1297)"].values
@@ -36,7 +48,7 @@ drugs = {
     "Dabrafenib": (1, "BRAF", "ERK MAPK signaling", lambda: 3 - 2.5 * braf),
     "Lapatinib": (2, "ERBB2, EGFR", "EGFR signaling", lambda: 4 - 1.2 * (erbb2 - 3)),
     "Nutlin-3a (-)": (3, "MDM2", "p53 pathway", lambda: 2 + 1.8 * tp53),
-    "Cisplatin": (4, "DNA crosslinker", "DNA replication", lambda: np.full(n_lines, 3.0)),
+    "Cisplatin": (4, "DNA crosslinker", "DNA replication", lambda: 3.0 + 1.5 * pancreas),
 }
 for name, (did, tgt, path, f) in drugs.items():
     y = f() + rng.normal(0, 0.7, n_lines)
