@@ -139,6 +139,48 @@ expression genes (2,000 most variable + 112 drug targets) and 21 hotspot genes.
 
 SHAP summaries for all explained drugs are in [`results/figures/`](results/figures/).
 
+## Related work
+This project is an independent reanalysis on current data releases (GDSC2
+release 8.5, DepMap 24Q4). The main analyses follow established work, and the
+recovered biomarkers are known findings, which is why they serve as controls.
+
+- **Mutation-drug association scan.** Garnett et al. (2012) introduced the
+  GDSC screen and the systematic association of cancer gene mutations with
+  drug response. Iorio et al. (2016) extended it to 265 drugs and 1,001 cell
+  lines and highlighted the role of tissue lineage in drug response, which
+  motivates the tissue-adjusted test used here.
+- **Drug response prediction.** Barretina et al. (2012) built elastic net
+  predictors of drug sensitivity on the CCLE. Jang et al. (2014) compared over
+  110,000 models and recommended elastic net or ridge regression with gene
+  expression features. The finding here that XGBoost does not outperform
+  elastic net is consistent with that recommendation. In the NCI-DREAM
+  challenge (Costello et al., 2014), on breast cancer lines with multiple data
+  types, the top methods modeled nonlinear relationships and pathway
+  information; this project does neither, so it does not test that result.
+- **SLFN11.** Expression of SLFN11 predicts sensitivity to topoisomerase I
+  inhibitors (Zoppoli et al., 2012; Barretina et al., 2012), the top SHAP
+  feature for irinotecan here.
+
+### References
+1. Garnett MJ, et al. Systematic identification of genomic markers of drug
+   sensitivity in cancer cells. *Nature* 483:570-575 (2012).
+   [doi:10.1038/nature11005](https://doi.org/10.1038/nature11005)
+2. Barretina J, et al. The Cancer Cell Line Encyclopedia enables predictive
+   modelling of anticancer drug sensitivity. *Nature* 483:603-607 (2012).
+   [doi:10.1038/nature11003](https://doi.org/10.1038/nature11003)
+3. Zoppoli G, et al. Putative DNA/RNA helicase Schlafen-11 (SLFN11) sensitizes
+   cancer cells to DNA-damaging agents. *PNAS* 109:15030-15035 (2012).
+   [doi:10.1073/pnas.1205943109](https://doi.org/10.1073/pnas.1205943109)
+4. Jang IS, et al. Systematic assessment of analytical methods for drug
+   sensitivity prediction from cancer cell line data. *Pac Symp Biocomput*
+   2014:63-74. [PMID 24297534](https://pubmed.ncbi.nlm.nih.gov/24297534/)
+5. Costello JC, et al. A community effort to assess and improve drug
+   sensitivity prediction algorithms. *Nat Biotechnol* 32:1202-1212 (2014).
+   [doi:10.1038/nbt.2877](https://doi.org/10.1038/nbt.2877)
+6. Iorio F, et al. A landscape of pharmacogenomic interactions in cancer.
+   *Cell* 166:740-754 (2016).
+   [doi:10.1016/j.cell.2016.06.017](https://doi.org/10.1016/j.cell.2016.06.017)
+
 ## Limitations / next steps
 - Cell lines are an imperfect stand-in for patient tumors. Tissue adjustment
   removes between-lineage confounding but not confounders within a lineage
