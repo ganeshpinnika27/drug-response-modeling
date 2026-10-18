@@ -1,0 +1,31 @@
+# Paths are relative to the repo root. DepMap renames files between releases;
+# if your release differs, point these at the matching files.
+data_dir: data/raw
+out_dir: results
+
+gdsc:
+  dose_response: data/raw/GDSC2_fitted_dose_response.xlsx   # GDSC release 8.5
+depmap:
+  model: data/raw/Model.csv
+  expression: data/raw/OmicsExpressionProteinCodingGenesTPMLogp1.csv
+  mutations: data/raw/OmicsSomaticMutationsMatrixHotspot.csv
+
+features:
+  n_top_variable_genes: 2000     # expression features kept (by variance)
+  min_mutated_lines: 10          # drop hotspot genes mutated in fewer lines
+
+modeling:
+  response: LN_IC50              # or AUC
+  min_cell_lines_per_drug: 300
+  cv_folds: 5
+  seed: 42
+  max_drugs: null                # set e.g. 20 for a quick run
+
+# Drugs with well-known biomarkers, used as positive controls in the report
+positive_controls:
+  - [Dabrafenib, BRAF]
+  - [SB590885, BRAF]
+  - [Nutlin-3a (-), TP53]
+  - [Lapatinib, ERBB2]
+  - [Erlotinib, EGFR]
+  - [Trametinib, BRAF]
