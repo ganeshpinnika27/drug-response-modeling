@@ -46,7 +46,8 @@ On SCINet, wrap `run_all.sh` in an `sbatch` script with `--cpus-per-task=16`.
   Benjamini–Hochberg FDR. A negative Δ means the mutant lines are more
   sensitive. Duplicate screens of a drug are averaged per cell line.
 * **Prediction:** 5-fold outer CV with out-of-fold predictions. Elastic net
-  tunes α and l1_ratio by inner 3-fold CV on each training fold, and scaling
+  tunes α (15 values from α_max down to α_max/100) and l1_ratio (0.1, 0.5,
+  0.9) by inner 3-fold CV on each training fold, and scaling
   is fit inside each fold. Metrics are Pearson r, Spearman ρ and RMSE.
 * **Explanation:** TreeExplainer SHAP on XGBoost refit to the full data for
   the best-predicted drugs. Lapatinib is also explained as an expression
