@@ -35,6 +35,7 @@ def main(cfg_path: str):
     resp = pd.read_parquet(proc / "response.parquet")
     mut = feats[[c for c in feats.columns if c.startswith("mut__")]]
 
+    min_n = cfg.get("associations", {}).get("min_group_lines", 10)
     rows = []
     # One test per drug name, averaging a line's response across DRUG_IDs when a
     # drug was screened more than once -- the same unit train_models.py uses.
@@ -46,7 +47,7 @@ def main(cfg_path: str):
         for gene_col in m.columns:
             is_mut = m[gene_col].values == 1
             n_mut = int(is_mut.sum())
-            if n_mut < 3 or (len(y) - n_mut) < 3:
+            if n_mut < min_n or (len(y) - n_mut) < min_n:
                 continue
             a, b = y.values[is_mut], y.values[~is_mut]
             t, p = stats.ttest_ind(a, b, equal_var=False)

@@ -58,7 +58,11 @@ def main(cfg_path: str, n_explain: int):
     seed = cfg["modeling"]["seed"]
     best = (met[met.model == "xgboost"].sort_values("pearson_r", ascending=False)
             .head(n_explain)["drug"].tolist())
-    rows = []
+    # Expression-biomarker controls are explained even if not among the best
+    expr_ctl = [(d, g) for d, g in cfg.get("expression_controls", [])
+                if d in set(resp["DRUG_NAME"])]
+    best += [d for d, _ in expr_ctl if d not in best]
+    rows, ctl_rows = [], []
     for drug in best:
         d = resp[resp["DRUG_NAME"] == drug].groupby("ModelID")["response"].mean()
         X = X_all.loc[d.index]
@@ -69,12 +73,22 @@ def main(cfg_path: str, n_explain: int):
         imp = pd.Series(np.abs(sv).mean(0), index=X.columns).sort_values(ascending=False)
         for rank, (feat, val) in enumerate(imp.head(10).items(), 1):
             rows.append({"drug": drug, "rank": rank, "feature": feat, "mean_abs_shap": val})
+        for d, gene in expr_ctl:
+            feat = f"expr__{gene}"
+            if d == drug and feat in imp.index:
+                ctl_rows.append({"drug": drug, "feature": feat,
+                                 "shap_rank": int(imp.index.get_loc(feat)) + 1,
+                                 "n_features": len(imp), "mean_abs_shap": imp[feat]})
         plt.figure()
         shap.summary_plot(sv, X, max_display=12, show=False)
         plt.title(drug)
         plt.tight_layout(); plt.savefig(figs / f"fig3_shap_{drug.replace('/', '_').replace(' ', '_')}.png", dpi=200)
         plt.close("all")
     pd.DataFrame(rows).to_csv(root / "models" / "shap_top_features.csv", index=False)
+    if ctl_rows:
+        ctl = pd.DataFrame(ctl_rows)
+        ctl.to_csv(root / "models" / "expression_controls.csv", index=False)
+        print("expression controls (SHAP rank):\n", ctl.to_string(index=False))
     print(f"figures written to {figs}")
 
 

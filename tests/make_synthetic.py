@@ -57,6 +57,8 @@ modeling: {{response: LN_IC50, min_cell_lines_per_drug: 100, cv_folds: 5, seed: 
 positive_controls:
   - [Dabrafenib, BRAF]
   - [Nutlin-3a (-), TP53]
+expression_controls:
+  - [Lapatinib, ERBB2]
 """
 (out / "config.yaml").write_text(cfg)
 print(f"synthetic data + config in {out}")

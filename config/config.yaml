@@ -21,11 +21,19 @@ modeling:
   seed: 42
   max_drugs: null                # set e.g. 20 for a quick run
 
-# Drugs with well-known biomarkers, used as positive controls in the report
+associations:
+  min_group_lines: 10            # skip tests with fewer mutant (or WT) lines
+
+# Drugs with well-known mutation biomarkers, checked in the association scan.
+# Nutlin-3a is a resistance control (TP53-mutant lines are LESS sensitive).
 positive_controls:
   - [Dabrafenib, BRAF]
   - [SB590885, BRAF]
   - [Nutlin-3a (-), TP53]
-  - [Lapatinib, ERBB2]
   - [Erlotinib, EGFR]
   - [Trametinib, BRAF]
+
+# Drugs whose biomarker is gene expression (amplification), not a hotspot
+# mutation; checked by the gene's SHAP rank in the drug's XGBoost model.
+expression_controls:
+  - [Lapatinib, ERBB2]

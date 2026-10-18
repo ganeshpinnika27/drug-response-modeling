@@ -42,19 +42,23 @@ On SCINet, wrap `run_all.sh` in an `sbatch` script with `--cpus-per-task=16`.
   least 10 lines. Variance filtering is unsupervised, so it doesn't leak the
   response into feature selection.
 * **Associations:** Welch t-test of response in mutant vs wild-type lines for
-  every drug × gene pair, with Benjamini–Hochberg FDR. A negative Δ means the
-  mutant lines are more sensitive.
+  every drug × gene pair with at least 10 mutant and 10 wild-type lines, with
+  Benjamini–Hochberg FDR. A negative Δ means the mutant lines are more
+  sensitive. Duplicate screens of a drug are averaged per cell line.
 * **Prediction:** 5-fold outer CV with out-of-fold predictions. Elastic net
   tunes α and l1_ratio by inner 3-fold CV on each training fold, and scaling
   is fit inside each fold. Metrics are Pearson r, Spearman ρ and RMSE.
 * **Explanation:** TreeExplainer SHAP on XGBoost refit to the full data for
-  the best-predicted drugs.
+  the best-predicted drugs. Lapatinib is also explained as an expression
+  control: its biomarker is ERBB2 amplification, which shows up as high ERBB2
+  expression rather than as a hotspot mutation.
 
 ## Outputs (`results/`)
 | File | Content |
 |---|---|
 | `associations/mutation_drug_associations.csv` | all drug × mutation tests |
-| `associations/positive_controls.csv` | e.g. BRAF→Dabrafenib, TP53→Nutlin-3a |
+| `associations/positive_controls.csv` | e.g. BRAF→Dabrafenib, TP53→Nutlin-3a (resistance) |
+| `models/expression_controls.csv` | SHAP rank of ERBB2 expression in the Lapatinib model |
 | `models/cv_metrics.csv`, `cv_summary.csv` | per-drug and median CV performance |
 | `models/xgboost_r_by_pathway.csv` | predictability by target pathway |
 | `models/shap_top_features.csv` | top SHAP features per drug |
