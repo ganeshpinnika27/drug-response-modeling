@@ -13,3 +13,4 @@ python src/prepare_data.py   --config "$CFG"
 python src/associations.py   --config "$CFG"
 python src/train_models.py   --config "$CFG"
 python src/explain_and_plot.py --config "$CFG"
+python src/validate_prism.py --config "$CFG"     # skipped if the config has no prism section

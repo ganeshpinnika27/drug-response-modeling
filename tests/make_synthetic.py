@@ -50,12 +50,24 @@ drugs = {
     "Nutlin-3a (-)": (3, "MDM2", "p53 pathway", lambda: 2 + 1.8 * tp53),
     "Cisplatin": (4, "DNA crosslinker", "DNA replication", lambda: 3.0 + 1.5 * pancreas),
 }
+# GDSC covers the first n_gdsc lines; a PRISM-format screen covers all lines,
+# so the last ones are "new" lines for the external-validation step. PRISM AUC
+# is the same planted signal with independent noise (separate RNG).
+n_gdsc = 340
+prng = np.random.default_rng(2)
+prism_rows = []
 for name, (did, tgt, path, f) in drugs.items():
-    y = f() + rng.normal(0, 0.7, n_lines)
-    for s, v in zip(sid, y):
+    signal = f()
+    y = signal + rng.normal(0, 0.7, n_lines)
+    for s, v in zip(sid[:n_gdsc], y[:n_gdsc]):
         rows.append({"SANGER_MODEL_ID": s, "DRUG_ID": did, "DRUG_NAME": name,
                      "PUTATIVE_TARGET": tgt, "PATHWAY_NAME": path, "LN_IC50": v, "AUC": np.nan})
+    auc = 0.6 + 0.1 * signal + prng.normal(0, 0.08, n_lines)
+    for a, v in zip(ach, auc):
+        prism_rows.append({"depmap_id": a, "name": name.lower(), "screen_id": "HTS002",
+                           "auc": v, "passed_str_profiling": True})
 pd.DataFrame(rows).to_csv(out / "GDSC2_fitted_dose_response.csv", index=False)
+pd.DataFrame(prism_rows).to_csv(out / "prism_dose_response.csv", index=False)
 
 cfg = f"""data_dir: {out}
 out_dir: {out}/results
@@ -64,6 +76,7 @@ depmap:
   model: {out}/Model.csv
   expression: {out}/OmicsExpressionProteinCodingGenesTPMLogp1.csv
   mutations: {out}/OmicsSomaticMutationsMatrixHotspot.csv
+prism: {{dose_response: {out}/prism_dose_response.csv}}
 features: {{n_top_variable_genes: 200, min_mutated_lines: 10}}
 modeling: {{response: LN_IC50, min_cell_lines_per_drug: 100, cv_folds: 5, seed: 42, max_drugs: null}}
 positive_controls:

@@ -13,6 +13,7 @@ results/models/*
 !results/associations/
 results/associations/*
 !results/associations/positive_controls.csv
+!results/prism/
 tests/synthetic/
 __pycache__/
 *.pyc

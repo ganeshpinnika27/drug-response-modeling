@@ -9,6 +9,8 @@ depmap:
   model: data/raw/Model.csv
   expression: data/raw/OmicsExpressionProteinCodingGenesTPMLogp1.csv
   mutations: data/raw/OmicsSomaticMutationsMatrixHotspot.csv
+prism:                         # external validation screen (optional)
+  dose_response: data/raw/prism-repurposing-20q2-secondary-screen-dose-response-curve-parameters.csv
 
 features:
   n_top_variable_genes: 2000     # expression features kept (by variance)
